@@ -7,13 +7,14 @@ import gc
 
 st.set_page_config(page_title="المفرغ الذكي - الدقة القصوى", page_icon="💎")
 
-# --- نظام الحماية ---
+# --- نظام الحماية (بدون هينت) ---
 if "password_correct" not in st.session_state:
     st.session_state["password_correct"] = False
 
 if not st.session_state["password_correct"]:
     st.title("🔒 الدخول محمي")
-    password = st.text_input("أدخل الرمز السري:", type="password", placeholder="777@jo")
+    # تم إزالة الـ placeholder تماماً بناءً على طلبك
+    password = st.text_input("أدخل الرمز السري:", type="password")
     if st.button("دخول"):
         if password == "777@jo":
             st.session_state["password_correct"] = True
@@ -22,39 +23,36 @@ if not st.session_state["password_correct"]:
             st.error("❌ الرمز السري غير صحيح!")
     st.stop()
 
-# --- البرنامج الرئيسي ---
-st.title("💎 تفريغ نصي بأعلى دقة (Medium Model)")
-st.info("ملاحظة: الموديل الدقيق قد يستغرق وقتاً أطول قليلاً في المعالجة للحصول على أفضل نتيجة.")
+# --- واجهة البرنامج ---
+st.title("💎 مفرغ النصوص الاحترافي")
+st.info("هذه النسخة تعمل بأعلى دقة ممكنة (Medium Model).")
 
-input_source = st.radio("اختر مصدر الصوت:", ["رابط من الإنترنت", "رفع ملف من الجهاز"])
-video_url = st.text_input("ضع الرابط هنا:") if input_source == "رابط من الإنترنت" else None
-uploaded_file = st.file_uploader("اختر ملف الفيديو/الصوت:", type=["mp4", "m4a", "mp3", "mov", "wav"]) if input_source == "رفع ملف من الجهاز" else None
+input_source = st.radio("مصدر الصوت:", ["رابط من الإنترنت", "رفع ملف"])
+video_url = st.text_input("الرابط:") if input_source == "رابط من الإنترنت" else None
+uploaded_file = st.file_uploader("الملف:", type=["mp4", "m4a", "mp3", "mov", "wav"]) if input_source == "رفع ملف" else None
 
 show_timestamps = st.checkbox("عرض التوقيت الزمني؟", value=True)
 
-if st.button("🚀 ابدأ المعالجة الاحترافية"):
+if st.button("🚀 ابدأ المعالجة"):
     audio_path = "pro_audio.m4a"
     try:
-        with st.spinner("⏳ جارٍ تجهيز الملف بأفضل جودة..."):
+        with st.spinner("⏳ جارٍ تجهيز الملف..."):
             if input_source == "رابط من الإنترنت" and video_url:
                 ydl_opts = {'format': 'bestaudio/best', 'outtmpl': 'pro_audio.%(ext)s', 'quiet': True}
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(video_url, download=True)
                     audio_path = ydl.prepare_filename(info)
-            elif input_source == "رفع ملف من الجهاز" and uploaded_file:
+            elif input_source == "رفع ملف" and uploaded_file:
                 audio_path = "uploaded_pro.m4a"
                 with open(audio_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
             else:
-                st.warning("برجاء إدخال الرابط أو الملف!")
+                st.warning("أدخل البيانات أولاً!")
                 st.stop()
 
-        with st.spinner("🧠 الذكاء الاصطناعي يحلل الكلام (الموديل الدقيق جداً)..."):
-            # استخدام موديل Medium لضمان أدق كلام
+        with st.spinner("🧠 ذكاء اصطناعي فائق (Medium) يكتب الآن..."):
             model = whisper.load_model("medium")
-            
-            # إجبار الموديل على معالجة اللغة العربية بدقة عالية
-            # beam_size=5 يحسن الدقة بشكل كبير جداً في الكلمات الصعبة
+            # استخدام أعلى معايير الدقة
             result = model.transcribe(audio_path, language="ar", beam_size=5)
 
             final_text = ""
@@ -65,17 +63,14 @@ if st.button("🚀 ابدأ المعالجة الاحترافية"):
                 else:
                     final_text += f"{segment['text']} "
 
-            st.success("✅ تم استخراج النص بأعلى دقة ممكنة!")
-            st.text_area("النص الناتج:", value=final_text, height=400)
-            st.download_button("📥 تحميل النص النهائي", final_text, file_name=f"perfect_transcript.txt")
+            st.success("✅ اكتملت المهمة بأعلى دقة!")
+            st.text_area("النص المستخرج:", value=final_text, height=400)
+            st.download_button("📥 تحميل ملف النص", final_text, file_name="perfect_transcript.txt")
 
-            # إجراءات أمان للسيرفر: مسح الموديل من الرام فوراً
+            # تفريغ الذاكرة فوراً
             del model
             gc.collect() 
             if os.path.exists(audio_path): os.remove(audio_path)
 
     except Exception as e:
-        if "Out of memory" in str(e):
-            st.error("⚠️ الفيديو طويل جداً على السيرفر المجاني بالدقة القصوى. جرب فيديو أقصر أو اطلب مني تقليل الدقة قليلاً.")
-        else:
-            st.error(f"⚠️ حدث خطأ: {e}")
+        st.error(f"⚠️ حدث خطأ: {e}")
